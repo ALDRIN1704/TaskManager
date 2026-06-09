@@ -1,0 +1,12 @@
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\model\TaskPriority.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\config\CorsConfig.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\controller\TaskController.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\exception\GlobalExceptionHandler.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\exception\ResourceNotFoundException.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\TaskManagerApplication.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\model\Task.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\dto\TaskRequest.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\model\TaskStatus.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\service\TaskService.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\dto\StatusUpdateRequest.java
+C:\Users\aldri\.gemini\antigravity\scratch\taskflow\backend\src\main\java\com\taskmanager\repository\TaskRepository.java
