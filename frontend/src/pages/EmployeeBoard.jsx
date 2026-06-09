@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEmployeeById } from '../data/employees';
 import { taskService } from '../services/taskService';
+import { subTaskService } from '../services/subTaskService';
 import Navbar from '../components/Navbar';
 import KanbanBoard from '../components/KanbanBoard';
-import { ArrowLeft, Mail, Phone, User, Calendar, X } from 'lucide-react';
+import DueBadge from '../components/DueBadge';
+import { ArrowLeft, Mail, Phone, User, Calendar, X, GitCommit } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function EmployeeBoard() {
@@ -12,10 +14,11 @@ export default function EmployeeBoard() {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [subTasks, setSubTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Task detail modal state
-  const [selectedTask, setSelectedTask] = useState(null);
+  // Task/Subtask detail modal state
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     const emp = getEmployeeById(employeeId);
@@ -25,37 +28,58 @@ export default function EmployeeBoard() {
       return;
     }
     setEmployee(emp);
-    fetchTasks(emp.id);
+    fetchBoardData(emp.id);
   }, [employeeId, navigate]);
 
-  const fetchTasks = async (id) => {
+  const fetchBoardData = async (empId) => {
     setIsLoading(true);
     try {
-      const data = await taskService.getTasksByEmployee(id);
-      setTasks(data || []);
+      const [tasksData, subtasksData] = await Promise.all([
+        taskService.getTasksByEmployee(empId),
+        subTaskService.getSubTasksByEmployee(empId)
+      ]);
+      setTasks(tasksData || []);
+      setSubTasks(subtasksData || []);
     } catch (err) {
-      toast.error('Failed to load tasks from API');
+      toast.error('Failed to load board tasks');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTaskStatusChange = async (taskId, newStatus) => {
-    // Update local UI immediately for responsiveness
+  const handleTaskStatusChange = async (itemId, newStatus, isSubTask) => {
     const oldTasks = [...tasks];
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    const oldSubtasks = [...subTasks];
+
+    // Optimistically update state
+    if (isSubTask) {
+      setSubTasks(prev => prev.map(t => t.id === itemId ? { ...t, status: newStatus } : t));
+    } else {
+      setTasks(prev => prev.map(t => t.id === itemId ? { ...t, status: newStatus } : t));
+    }
     
     try {
-      await taskService.updateTaskStatus(taskId, newStatus);
-      toast.success('Task status updated successfully');
+      if (isSubTask) {
+        await subTaskService.updateSubTaskStatus(itemId, newStatus, employee.name);
+      } else {
+        await taskService.updateTaskStatus(itemId, newStatus, employee.name);
+      }
+      toast.success('Status updated successfully');
     } catch (err) {
-      // Revert if API fails
+      // Revert states
       setTasks(oldTasks);
+      setSubTasks(oldSubtasks);
       toast.error('Failed to update status on server');
     }
   };
 
   if (!employee) return null;
+
+  // Combine tasks and subtasks for Kanban board rendering
+  const combinedItems = [
+    ...tasks,
+    ...subTasks
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
@@ -78,12 +102,12 @@ export default function EmployeeBoard() {
                 <User className="h-7 w-7" />
               </div>
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">{employee.id}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{employee.id}</span>
                 <h1 className="text-2xl font-black text-slate-900 leading-tight">{employee.name}</h1>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm text-slate-600 md:border-l md:border-slate-100 md:pl-8">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm text-slate-600 md:border-l md:border-slate-100 md:pl-8 font-semibold">
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-slate-400" />
                 <span>{employee.email}</span>
@@ -107,23 +131,25 @@ export default function EmployeeBoard() {
             </div>
           ) : (
             <KanbanBoard
-              tasks={tasks}
+              tasks={combinedItems}
               onTaskStatusChange={handleTaskStatusChange}
-              onOpenDetailsTask={setSelectedTask}
+              onOpenDetailsTask={setSelectedItem}
               isAdmin={false}
             />
           )}
         </div>
       </main>
 
-      {/* Task Details Modal */}
-      {selectedTask && (
+      {/* Item Details Modal */}
+      {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200/80 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Task Details</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {selectedItem.parentTaskId ? 'Subtask Details' : 'Task Details'}
+              </h3>
               <button
-                onClick={() => setSelectedTask(null)}
+                onClick={() => setSelectedItem(null)}
                 className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -132,14 +158,38 @@ export default function EmployeeBoard() {
             
             <div className="py-4 space-y-4">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Title</span>
-                <p className="text-base font-extrabold text-slate-900 mt-0.5">{selectedTask.title}</p>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Project</span>
+                <p className="text-sm font-bold text-slate-750">{selectedItem.projectName}</p>
               </div>
+
+              {selectedItem.parentTaskId && (
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Parent Task</span>
+                  <p className="text-sm font-bold text-purple-700 flex items-center gap-1 mt-0.5">
+                    <GitCommit className="h-4 w-4 text-purple-400 inline" />
+                    {selectedItem.parentTaskTitle}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Title</span>
+                <p className="text-base font-extrabold text-slate-900 mt-0.5">{selectedItem.title}</p>
+              </div>
+
+              {!selectedItem.parentTaskId && selectedItem.type && (
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Task Type</span>
+                  <span className="inline-block px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-755 text-xs font-bold uppercase border border-indigo-100 mt-1">
+                    {selectedItem.type}
+                  </span>
+                </div>
+              )}
 
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Description</span>
                 <p className="text-sm text-slate-600 leading-relaxed mt-0.5">
-                  {selectedTask.description || 'No description provided.'}
+                  {selectedItem.description || 'No description provided.'}
                 </p>
               </div>
 
@@ -148,32 +198,48 @@ export default function EmployeeBoard() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Priority</span>
                   <div className="mt-1">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                      selectedTask.priority === 'HIGH' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                      selectedTask.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      selectedItem.priority === 'HIGH' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                      selectedItem.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                       'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}>
-                      {selectedTask.priority}
+                      {selectedItem.priority}
                     </span>
                   </div>
                 </div>
 
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Due Date</span>
-                  <div className="flex items-center space-x-1.5 mt-1 text-sm font-semibold text-slate-700">
+                  <div className="flex items-center space-x-1.5 mt-1 text-sm font-semibold text-slate-755">
                     <Calendar className="h-4 w-4 text-slate-400" />
-                    <span>{new Date(selectedTask.dueDate).toLocaleDateString('en-US', {
+                    <span>{new Date(selectedItem.dueDate).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     })}</span>
+                    <DueBadge dueDate={selectedItem.dueDate} status={selectedItem.status} />
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Start Date</span>
+                  <span className="text-xs font-semibold text-slate-700 mt-1 block">
+                    {selectedItem.startDate ? new Date(selectedItem.startDate).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Duration</span>
+                  <span className="text-xs font-semibold text-slate-700 mt-1 block">
+                    {calculateDuration(selectedItem.startDate, selectedItem.dueDate)} days
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button
-                onClick={() => setSelectedTask(null)}
+                onClick={() => setSelectedItem(null)}
                 className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-100 transition-all"
               >
                 Close

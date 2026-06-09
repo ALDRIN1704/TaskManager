@@ -10,11 +10,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     
-    <groupId>com.taskflow</groupId>
+    <groupId>com.taskmanager</groupId>
     <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TaskFlow Backend</name>
-    <description>TaskFlow Project Management System Backend REST APIs</description>
+    <name>TaskManager Backend</name>
+    <description>Task Manager Project Management System Backend REST APIs</description>
     
     <properties>
         <java.version>17</java.version>

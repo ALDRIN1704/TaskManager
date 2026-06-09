@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { employees } from '../data/employees';
-import { ShieldAlert, ArrowRight, User } from 'lucide-react';
+import { ShieldAlert, ArrowRight, User, FolderKanban } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
             Task <span className="text-indigo-600">Manager</span>
           </h1>
           <p className="text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
-            Assign, track, and manage employee tasks efficiently in a simple, responsive workspace.
+            Assign, track, and manage employee tasks and projects efficiently in a simple, responsive workspace.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
@@ -32,6 +32,13 @@ export default function Home() {
             >
               <ShieldAlert className="h-5 w-5" />
               <span>Go To Admin Dashboard</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/projects')}
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 rounded-xl border border-indigo-200 bg-white hover:bg-slate-55 px-6 py-3.5 text-base font-bold text-indigo-650 shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+            >
+              <FolderKanban className="h-5 w-5" />
+              <span>View Projects</span>
             </button>
           </div>
         </div>
@@ -53,26 +60,26 @@ export default function Home() {
             >
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-55 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                     <User className="h-5 w-5" />
                   </div>
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                       {emp.id}
                     </span>
-                    <h4 className="text-base font-extrabold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                    <h4 className="text-base font-extrabold text-slate-800 group-hover:text-indigo-650 transition-colors">
                       {emp.name}
                     </h4>
                   </div>
                 </div>
                 
-                <div className="pt-2 space-y-1 text-xs text-slate-500">
-                  <p><strong className="text-slate-700">Email:</strong> {emp.email}</p>
-                  <p><strong className="text-slate-700">Phone:</strong> {emp.phone}</p>
+                <div className="pt-2 space-y-1 text-xs text-slate-505">
+                  <p><strong className="text-slate-700 font-semibold">Email:</strong> {emp.email}</p>
+                  <p><strong className="text-slate-700 font-semibold">Phone:</strong> {emp.phone}</p>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end text-xs font-bold text-slate-400 group-hover:text-indigo-600 transition-colors">
+              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end text-xs font-bold text-slate-400 group-hover:text-indigo-650 transition-colors">
                 <span className="flex items-center space-x-1">
                   <span>Open Board</span>
                   <ArrowRight className="h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform" />

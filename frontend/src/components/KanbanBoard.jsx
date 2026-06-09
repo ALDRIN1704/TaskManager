@@ -3,8 +3,11 @@ import { DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDrop
 import TaskCard from './TaskCard';
 
 function DraggableTaskCard({ task, onEdit, onDelete, onViewDetails, isAdmin }) {
+  const isSubTask = !!task.parentTaskId;
+  const draggableId = isSubTask ? `subtask-${task.id}` : `task-${task.id}`;
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id.toString(),
+    id: draggableId,
   });
 
   const style = transform ? {
@@ -45,14 +48,14 @@ function KanbanColumn({ id, title, children }) {
     >
       <div className="flex items-center justify-between pb-3 border-b border-slate-200/50">
         <h4 className="text-sm font-bold uppercase tracking-wider text-slate-700">{title}</h4>
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-650">
           {React.Children.count(children)}
         </span>
       </div>
       <div className="flex-1 space-y-4 mt-2">
         {React.Children.count(children) === 0 ? (
           <div className="h-full min-h-[200px] flex items-center justify-center border-2 border-dashed border-slate-200/60 rounded-2xl text-slate-400 text-xs font-medium">
-            No tasks here
+            No items here
           </div>
         ) : (
           children
@@ -78,7 +81,15 @@ export default function KanbanBoard({ tasks, onTaskStatusChange, onEditTask, onD
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
-    const draggedTask = tasks.find((t) => t.id.toString() === activeId);
+    const isSubTask = activeId.startsWith('subtask-');
+    const cleanActiveId = activeId.replace('subtask-', '').replace('task-', '');
+
+    const draggedTask = tasks.find(t => {
+      const matchId = t.id.toString() === cleanActiveId;
+      const matchSub = isSubTask ? !!t.parentTaskId : !t.parentTaskId;
+      return matchId && matchSub;
+    });
+
     if (!draggedTask) return;
 
     let targetStatus = null;
@@ -86,14 +97,18 @@ export default function KanbanBoard({ tasks, onTaskStatusChange, onEditTask, onD
     if (['TODO', 'IN_PROGRESS', 'COMPLETED'].includes(overId)) {
       targetStatus = overId;
     } else {
-      const targetTask = tasks.find((t) => t.id.toString() === overId);
-      if (targetTask) {
-        targetStatus = targetTask.status;
+      const targetItem = tasks.find(t => {
+        const isTargetSub = !!t.parentTaskId;
+        const targetDraggableId = isTargetSub ? `subtask-${t.id}` : `task-${t.id}`;
+        return targetDraggableId === overId;
+      });
+      if (targetItem) {
+        targetStatus = targetItem.status;
       }
     }
 
     if (targetStatus && draggedTask.status !== targetStatus) {
-      onTaskStatusChange(draggedTask.id, targetStatus);
+      onTaskStatusChange(cleanActiveId, targetStatus, isSubTask);
     }
   };
 
@@ -110,16 +125,20 @@ export default function KanbanBoard({ tasks, onTaskStatusChange, onEditTask, onD
           const columnTasks = tasks.filter((t) => t.status === col.id);
           return (
             <KanbanColumn key={col.id} id={col.id} title={col.title}>
-              {columnTasks.map((task) => (
-                <DraggableTaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={onEditTask}
-                  onDelete={onDeleteTask}
-                  onViewDetails={onOpenDetailsTask}
-                  isAdmin={isAdmin}
-                />
-              ))}
+              {columnTasks.map((task) => {
+                const isSub = !!task.parentTaskId;
+                const uniqueKey = isSub ? `subtask-${task.id}` : `task-${task.id}`;
+                return (
+                  <DraggableTaskCard
+                    key={uniqueKey}
+                    task={task}
+                    onEdit={onEditTask}
+                    onDelete={onDeleteTask}
+                    onViewDetails={onOpenDetailsTask}
+                    isAdmin={isAdmin}
+                  />
+                );
+              })}
             </KanbanColumn>
           );
         })}

@@ -19,6 +19,12 @@ export const taskService = {
     return response.data;
   },
 
+  // GET /api/tasks/project/{projectId}
+  async getTasksByProject(projectId) {
+    const response = await axios.get(`/api/tasks/project/${projectId}`);
+    return response.data;
+  },
+
   // POST /api/tasks
   async createTask(taskData) {
     const response = await axios.post('/api/tasks', taskData);
@@ -32,8 +38,8 @@ export const taskService = {
   },
 
   // PATCH /api/tasks/{id}/status
-  async updateTaskStatus(id, status) {
-    const response = await axios.patch(`/api/tasks/${id}/status`, { status });
+  async updateTaskStatus(id, status, actorName = null) {
+    const response = await axios.patch(`/api/tasks/${id}/status`, { status, actorName });
     return response.data;
   },
 

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { employees } from '../data/employees';
 
-export default function TaskForm({ isOpen, onClose, onSubmit, task = null, projects = [], preselectedProjectId = '' }) {
+export default function SubTaskForm({ isOpen, onClose, onSubmit, subTask = null, projectId = '', parentTaskId = '', parentTaskTitle = '' }) {
   const [formData, setFormData] = useState({
     projectId: '',
+    parentTaskId: '',
     title: '',
     description: '',
     status: 'TODO',
-    type: 'TASK',
     priority: 'MEDIUM',
     startDate: '',
     dueDate: '',
@@ -18,26 +18,26 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (task) {
+    if (subTask) {
       setFormData({
-        projectId: task.projectId || preselectedProjectId || '',
-        title: task.title || '',
-        description: task.description || '',
-        status: task.status || 'TODO',
-        type: task.type || 'TASK',
-        priority: task.priority || 'MEDIUM',
-        startDate: task.startDate || '',
-        dueDate: task.dueDate || '',
-        assignedTo: task.assignedTo || '',
-        assignedToName: task.assignedToName || ''
+        projectId: subTask.projectId || projectId || '',
+        parentTaskId: subTask.parentTaskId || parentTaskId || '',
+        title: subTask.title || '',
+        description: subTask.description || '',
+        status: subTask.status || 'TODO',
+        priority: subTask.priority || 'MEDIUM',
+        startDate: subTask.startDate || '',
+        dueDate: subTask.dueDate || '',
+        assignedTo: subTask.assignedTo || '',
+        assignedToName: subTask.assignedToName || ''
       });
     } else {
       setFormData({
-        projectId: preselectedProjectId || '',
+        projectId: projectId || '',
+        parentTaskId: parentTaskId || '',
         title: '',
         description: '',
         status: 'TODO',
-        type: 'TASK',
         priority: 'MEDIUM',
         startDate: '',
         dueDate: '',
@@ -46,7 +46,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
       });
     }
     setErrors({});
-  }, [task, isOpen, preselectedProjectId]);
+  }, [subTask, isOpen, projectId, parentTaskId]);
 
   if (!isOpen) return null;
 
@@ -69,19 +69,15 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.projectId) newErrors.projectId = 'Project is required';
     if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.type) newErrors.type = 'Type is required';
+    if (!formData.assignedTo) newErrors.assignedTo = 'Assigned employee is required';
     if (!formData.priority) newErrors.priority = 'Priority is required';
     if (!formData.startDate) newErrors.startDate = 'Start date is required';
-    if (!formData.assignedTo) newErrors.assignedTo = 'Assigned employee is required';
-    
     if (!formData.dueDate) {
       newErrors.dueDate = 'Due date is required';
     } else if (formData.startDate && new Date(formData.dueDate) < new Date(formData.startDate)) {
       newErrors.dueDate = 'Due date cannot be before start date';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -96,7 +92,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200/80 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <h3 className="text-xl font-bold text-slate-900">{task ? 'Edit Task' : 'Create Task'}</h3>
+          <h3 className="text-xl font-bold text-slate-900">{subTask ? 'Edit Subtask' : 'Create Subtask'}</h3>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
@@ -105,27 +101,13 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4 overflow-y-auto flex-1 pr-1">
-          {/* Project selection */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Project <span className="text-rose-500">*</span>
-            </label>
-            <select
-              name="projectId"
-              value={formData.projectId}
-              onChange={handleChange}
-              disabled={!!preselectedProjectId}
-              className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.projectId ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all ${preselectedProjectId ? 'opacity-75 cursor-not-allowed bg-slate-100' : ''}`}
-            >
-              <option value="">Select Project</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            {errors.projectId && <span className="text-xs text-rose-500 mt-1 block">{errors.projectId}</span>}
+        {parentTaskTitle && (
+          <div className="bg-indigo-50/50 rounded-xl px-4 py-2 mt-2 text-xs font-semibold text-indigo-700">
+            Parent Task: {parentTaskTitle}
           </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-4 py-4 overflow-y-auto flex-1 pr-1">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Title <span className="text-rose-500">*</span>
@@ -135,8 +117,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Enter task title"
-              className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.title ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
+              placeholder="Enter subtask title"
+              className={`w-full px-4 py-2.5 bg-slate-55 border ${errors.title ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
             />
             {errors.title && <span className="text-xs text-rose-500 mt-1 block">{errors.title}</span>}
           </div>
@@ -147,30 +129,13 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Enter task description"
+              placeholder="Enter subtask description"
               rows={3}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all resize-none"
+              className="w-full px-4 py-2.5 bg-slate-55 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Type <span className="text-rose-500">*</span>
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all"
-              >
-                <option value="TASK">TASK</option>
-                <option value="BUG">BUG</option>
-                <option value="FEATURE">FEATURE</option>
-                <option value="STORY">STORY</option>
-              </select>
-            </div>
-
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Priority <span className="text-rose-500">*</span>
@@ -179,12 +144,32 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all"
+                className="w-full px-4 py-2.5 bg-slate-55 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all"
               >
                 <option value="LOW">LOW</option>
                 <option value="MEDIUM">MEDIUM</option>
                 <option value="HIGH">HIGH</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Assign To <span className="text-rose-500">*</span>
+              </label>
+              <select
+                name="assignedTo"
+                value={formData.assignedTo}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 bg-slate-55 border ${errors.assignedTo ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
+              >
+                <option value="">Select Employee</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.name} ({emp.id})
+                  </option>
+                ))}
+              </select>
+              {errors.assignedTo && <span className="text-xs text-rose-500 mt-1 block">{errors.assignedTo}</span>}
             </div>
           </div>
 
@@ -198,7 +183,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.startDate ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
+                className={`w-full px-4 py-2.5 bg-slate-55 border ${errors.startDate ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
               />
               {errors.startDate && <span className="text-xs text-rose-500 mt-1 block">{errors.startDate}</span>}
             </div>
@@ -212,40 +197,20 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
-                className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.dueDate ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
+                className={`w-full px-4 py-2.5 bg-slate-55 border ${errors.dueDate ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
               />
               {errors.dueDate && <span className="text-xs text-rose-500 mt-1 block">{errors.dueDate}</span>}
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Assign To <span className="text-rose-500">*</span>
-            </label>
-            <select
-              name="assignedTo"
-              value={formData.assignedTo}
-              onChange={handleChange}
-              className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.assignedTo ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all`}
-            >
-              <option value="">Select Employee</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name} ({emp.id})
-                </option>
-              ))}
-            </select>
-            {errors.assignedTo && <span className="text-xs text-rose-500 mt-1 block">{errors.assignedTo}</span>}
-          </div>
-
-          {task && (
+          {subTask && (
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Status</label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all"
+                className="w-full px-4 py-2.5 bg-slate-55 border border-slate-200 focus:ring-indigo-500 focus:border-transparent focus:ring-2 rounded-xl text-slate-800 text-sm outline-none transition-all"
               >
                 <option value="TODO">To Do</option>
                 <option value="IN_PROGRESS">In Progress</option>
@@ -266,7 +231,7 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task = null, proje
               type="submit"
               className="px-5 py-2 text-sm font-semibold text-white bg-indigo-650 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transition-all"
             >
-              {task ? 'Save Changes' : 'Create Task'}
+              {subTask ? 'Save Changes' : 'Create Subtask'}
             </button>
           </div>
         </form>

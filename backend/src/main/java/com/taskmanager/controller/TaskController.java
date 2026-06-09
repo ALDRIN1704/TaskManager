@@ -39,6 +39,12 @@ public class TaskController {
         return ResponseEntity.ok(task);
     }
 
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<Task>> getTasksByProjectId(@PathVariable String projectId) {
+        List<Task> tasks = taskService.getTasksByProjectId(projectId);
+        return ResponseEntity.ok(tasks);
+    }
+
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<Task>> getTasksByEmployeeId(@PathVariable String employeeId) {
         List<Task> tasks = taskService.getTasksByEmployeeId(employeeId);
@@ -57,7 +63,7 @@ public class TaskController {
     public ResponseEntity<Task> updateTaskStatus(
             @PathVariable String id,
             @Valid @RequestBody StatusUpdateRequest request) {
-        Task updatedTask = taskService.updateTaskStatus(id, request.getStatus());
+        Task updatedTask = taskService.updateTaskStatus(id, request.getStatus(), request.getActorName());
         return ResponseEntity.ok(updatedTask);
     }
 
